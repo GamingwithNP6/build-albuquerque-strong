@@ -1,19 +1,39 @@
-import { Phone, Mail, ArrowRight } from "lucide-react";
+import { Phone, Mail, ArrowRight, Loader2 } from "lucide-react";
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 import heroImg from "@/assets/hero-construction.jpg";
 
 const HeroSection = () => {
   const { toast } = useToast();
   const [form, setForm] = useState({ name: "", phone: "", email: "", description: "" });
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    toast({
-      title: "Request Submitted!",
-      description: "We'll get back to you within 24 hours.",
-    });
-    setForm({ name: "", phone: "", email: "", description: "" });
+    setIsSubmitting(true);
+    try {
+      const { error } = await supabase.from("contact_submissions").insert({
+        name: form.name.trim(),
+        phone: form.phone.trim(),
+        email: form.email.trim(),
+        description: form.description.trim(),
+      });
+      if (error) throw error;
+      toast({
+        title: "Request Submitted!",
+        description: "We'll get back to you within 24 hours.",
+      });
+      setForm({ name: "", phone: "", email: "", description: "" });
+    } catch {
+      toast({
+        title: "Something went wrong",
+        description: "Please call us at (505) 980-1923 or try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -133,9 +153,10 @@ const HeroSection = () => {
                 </div>
                 <button
                   type="submit"
-                  className="w-full bg-secondary text-secondary-foreground font-heading font-bold py-4 rounded-md hover:brightness-110 transition-all shadow-cta text-lg"
+                  disabled={isSubmitting}
+                  className="w-full bg-secondary text-secondary-foreground font-heading font-bold py-4 rounded-md hover:brightness-110 transition-all shadow-cta text-lg disabled:opacity-60 flex items-center justify-center gap-2"
                 >
-                  Request Free Consultation
+                  {isSubmitting ? <><Loader2 className="w-5 h-5 animate-spin" /> Submitting...</> : "Request Free Consultation"}
                 </button>
                 <p className="text-center text-muted-foreground text-xs">
                   No obligation. 100% free estimate.
