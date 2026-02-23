@@ -14,30 +14,179 @@ export type Database = {
   }
   public: {
     Tables: {
+      audit_logs: {
+        Row: {
+          action_type: string
+          admin_id: string
+          after_data: Json | null
+          before_data: Json | null
+          created_at: string
+          entity_id: string | null
+          entity_type: string
+          id: string
+        }
+        Insert: {
+          action_type: string
+          admin_id: string
+          after_data?: Json | null
+          before_data?: Json | null
+          created_at?: string
+          entity_id?: string | null
+          entity_type: string
+          id?: string
+        }
+        Update: {
+          action_type?: string
+          admin_id?: string
+          after_data?: Json | null
+          before_data?: Json | null
+          created_at?: string
+          entity_id?: string | null
+          entity_type?: string
+          id?: string
+        }
+        Relationships: []
+      }
       contact_submissions: {
         Row: {
+          admin_notes: string | null
+          archived: boolean
           created_at: string
           description: string
           email: string
           id: string
+          importance: Database["public"]["Enums"]["submission_importance"]
+          labels: string[] | null
           name: string
           phone: string
+          status: Database["public"]["Enums"]["submission_status"]
+          updated_at: string
+          updated_by: string | null
+          user_id: string | null
         }
         Insert: {
+          admin_notes?: string | null
+          archived?: boolean
           created_at?: string
           description: string
           email: string
           id?: string
+          importance?: Database["public"]["Enums"]["submission_importance"]
+          labels?: string[] | null
           name: string
           phone: string
+          status?: Database["public"]["Enums"]["submission_status"]
+          updated_at?: string
+          updated_by?: string | null
+          user_id?: string | null
         }
         Update: {
+          admin_notes?: string | null
+          archived?: boolean
           created_at?: string
           description?: string
           email?: string
           id?: string
+          importance?: Database["public"]["Enums"]["submission_importance"]
+          labels?: string[] | null
           name?: string
           phone?: string
+          status?: Database["public"]["Enums"]["submission_status"]
+          updated_at?: string
+          updated_by?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      labels: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          created_at: string
+          display_name: string
+          id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          display_name?: string
+          id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          display_name?: string
+          id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      request_notes: {
+        Row: {
+          author_role: string
+          author_user_id: string
+          content: string
+          created_at: string
+          id: string
+          submission_id: string
+        }
+        Insert: {
+          author_role?: string
+          author_user_id: string
+          content: string
+          created_at?: string
+          id?: string
+          submission_id: string
+        }
+        Update: {
+          author_role?: string
+          author_user_id?: string
+          content?: string
+          created_at?: string
+          id?: string
+          submission_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "request_notes_submission_id_fkey"
+            columns: ["submission_id"]
+            isOneToOne: false
+            referencedRelation: "contact_submissions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_roles: {
+        Row: {
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
         }
         Relationships: []
       }
@@ -46,10 +195,25 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
     }
     Enums: {
-      [_ in never]: never
+      app_role: "admin" | "user"
+      submission_importance: "Low" | "Medium" | "High" | "Critical"
+      submission_status:
+        | "New"
+        | "Triaged"
+        | "In Progress"
+        | "Waiting on User"
+        | "Blocked"
+        | "Done"
+        | "Closed"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -176,6 +340,18 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      app_role: ["admin", "user"],
+      submission_importance: ["Low", "Medium", "High", "Critical"],
+      submission_status: [
+        "New",
+        "Triaged",
+        "In Progress",
+        "Waiting on User",
+        "Blocked",
+        "Done",
+        "Closed",
+      ],
+    },
   },
 } as const
