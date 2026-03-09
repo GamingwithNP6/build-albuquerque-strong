@@ -4,7 +4,15 @@ import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { Checkbox } from "@/components/ui/checkbox";
+import { z } from "zod";
 import heroImg from "@/assets/hero-construction.jpg";
+
+const contactSchema = z.object({
+  name: z.string().trim().min(1, "Name is required").max(100, "Name must be under 100 characters"),
+  phone: z.string().trim().min(1, "Phone is required").max(20, "Phone must be under 20 characters").regex(/^[\d\s()+\-.]+$/, "Phone contains invalid characters"),
+  email: z.string().trim().email("Invalid email address").max(255, "Email must be under 255 characters"),
+  description: z.string().trim().min(1, "Project description is required").max(1000, "Description must be under 1000 characters"),
+});
 
 const HeroSection = () => {
   const { toast } = useToast();
