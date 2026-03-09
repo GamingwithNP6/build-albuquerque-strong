@@ -35,14 +35,31 @@ const HeroSection = () => {
     e.preventDefault();
     setIsSubmitting(true);
     try {
-      const { error } = await supabase.from("contact_submissions").insert({
-        name: form.name.trim(),
-        phone: form.phone.trim(),
-        email: form.email.trim(),
-        description: form.description.trim(),
-        user_id: user?.id || null,
+      const parsed = contactSchema.safeParse(form);
+      if (!parsed.success) {
+        const firstError = parsed.error.errors[0]?.message || "Invalid input";
+        toast({ title: "Validation Error", description: firstError, variant: "destructive" });
+        setIsSubmitting(false);
+        return;
+      }
+
+      const { data: sessionData } = await supabase.auth.getSession();
+      const token = sessionData?.session?.access_token;
+
+      const response = await supabase.functions.invoke("submit-contact", {
+        body: {
+          name: parsed.data.name,
+          phone: parsed.data.phone,
+          email: parsed.data.email,
+          description: parsed.data.description,
+          user_id: user?.id || null,
+        },
+        ...(token ? { headers: { Authorization: `Bearer ${token}` } } : {}),
       });
-      if (error) throw error;
+
+      if (response.error) throw response.error;
+      if (response.data?.error) throw new Error(response.data.error);
+
       toast({
         title: "Request Submitted!",
         description: "We'll get back to you within 24 hours.",
