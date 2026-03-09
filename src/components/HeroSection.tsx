@@ -4,7 +4,15 @@ import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { Checkbox } from "@/components/ui/checkbox";
+import { z } from "zod";
 import heroImg from "@/assets/hero-construction.jpg";
+
+const contactSchema = z.object({
+  name: z.string().trim().min(1, "Name is required").max(100, "Name must be under 100 characters"),
+  phone: z.string().trim().min(1, "Phone is required").max(20, "Phone must be under 20 characters").regex(/^[\d\s()+\-.]+$/, "Phone contains invalid characters"),
+  email: z.string().trim().email("Invalid email address").max(255, "Email must be under 255 characters"),
+  description: z.string().trim().min(1, "Project description is required").max(1000, "Description must be under 1000 characters"),
+});
 
 const HeroSection = () => {
   const { toast } = useToast();
@@ -27,14 +35,31 @@ const HeroSection = () => {
     e.preventDefault();
     setIsSubmitting(true);
     try {
-      const { error } = await supabase.from("contact_submissions").insert({
-        name: form.name.trim(),
-        phone: form.phone.trim(),
-        email: form.email.trim(),
-        description: form.description.trim(),
-        user_id: user?.id || null,
+      const parsed = contactSchema.safeParse(form);
+      if (!parsed.success) {
+        const firstError = parsed.error.errors[0]?.message || "Invalid input";
+        toast({ title: "Validation Error", description: firstError, variant: "destructive" });
+        setIsSubmitting(false);
+        return;
+      }
+
+      const { data: sessionData } = await supabase.auth.getSession();
+      const token = sessionData?.session?.access_token;
+
+      const response = await supabase.functions.invoke("submit-contact", {
+        body: {
+          name: parsed.data.name,
+          phone: parsed.data.phone,
+          email: parsed.data.email,
+          description: parsed.data.description,
+          user_id: user?.id || null,
+        },
+        ...(token ? { headers: { Authorization: `Bearer ${token}` } } : {}),
       });
-      if (error) throw error;
+
+      if (response.error) throw response.error;
+      if (response.data?.error) throw new Error(response.data.error);
+
       toast({
         title: "Request Submitted!",
         description: "We'll get back to you within 24 hours.",
