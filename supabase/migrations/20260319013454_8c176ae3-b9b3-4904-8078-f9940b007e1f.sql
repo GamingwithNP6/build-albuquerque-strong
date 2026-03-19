@@ -1,0 +1,1 @@
+DROP POLICY "Allow public inserts" ON public.contact_submissions;
